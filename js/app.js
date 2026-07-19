@@ -7,7 +7,242 @@ let riskTrendChart = null;
 let socket = null;
 
 // ==========================================
-// 1. ROUTING AND AUTHENTICATION
+// 1. OFFLINE DEMO SIMULATION FALLBACK
+// ==========================================
+
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '';
+let useDemoMode = !isLocal;
+let activeSimulations = {};
+
+const initializeDemoState = () => {
+  console.log("[EDR-DEMO] Initializing Browser Mock Telemetry Mode.");
+  useDemoMode = true;
+  
+  // Seed 20 employees (mirroring Python backend)
+  const employeeNames = [
+    'Rithish', 'Rahul', 'Kumar', 'Vijay', 'Anand', 
+    'Employee-07', 'Suresh', 'Priya', 'Amit', 'Deepa', 
+    'Vikram', 'Neha', 'Kavitha', 'Arjun', 'Sanjay', 
+    'Divya', 'Meera', 'Rajesh', 'Karthik', 'Manoj'
+  ];
+  const departments = ['IT', 'Engineering', 'Finance', 'HR', 'Sales', 'Finance', 'IT', 'Operations', 'Engineering', 'Marketing', 'Sales', 'Legal', 'HR', 'IT', 'Finance', 'Engineering', 'Marketing', 'Operations', 'IT', 'Sales'];
+  
+  employeeNames.forEach((name, i) => {
+    const empId = name.toLowerCase();
+    if (!employees[empId]) {
+      employees[empId] = {
+        name: name,
+        department: departments[i],
+        deviceName: `WORKSTATION-${name.toUpperCase()}`,
+        status: 'Protected',
+        riskScore: 12,
+        threatLevel: 'LOW',
+        isAgentConnected: i === 2 || i === 5, // Kumar and Employee-07 have agent connected in demo
+        usbStatus: 'No USB Connected',
+        cpuUsage: 12,
+        memoryUsage: 35,
+        runningProcesses: ['chrome.exe', 'code.exe', 'explorer.exe'],
+        alerts: [],
+        activityTimeline: [
+          { time: '09:00 AM', event: 'System Boot & Login', risk: 0, type: 'info' },
+          { time: '09:10 AM', event: 'Chrome Browser Opened', risk: 0, type: 'info' },
+          { time: '09:15 AM', event: 'VS Code IDE Opened', risk: 0, type: 'info' }
+        ],
+        isIsolated: false,
+        underActiveThreatSimulation: false
+      };
+    }
+  });
+
+  // Seed default threat logs if empty
+  if (logs.length === 0) {
+    const now = new Date();
+    logs = [
+      {
+        id: 'log-1',
+        time: new Date(now.getTime() - 200 * 60 * 000).toLocaleTimeString(),
+        date: new Date(now.getTime() - 200 * 60 * 000).toLocaleDateString(),
+        username: 'Rahul',
+        deviceName: 'WORKSTATION-RAHUL',
+        event: 'USB Connected',
+        risk: 20,
+        actionTaken: 'Monitored'
+      },
+      {
+        id: 'log-2',
+        time: new Date(now.getTime() - 100 * 60 * 000).toLocaleTimeString(),
+        date: new Date(now.getTime() - 100 * 60 * 000).toLocaleDateString(),
+        username: 'Vijay',
+        deviceName: 'WORKSTATION-VIJAY',
+        event: 'Unknown Process Opened: cheatengine.exe',
+        risk: 40,
+        actionTaken: 'Alert Generated'
+      },
+      {
+        id: 'log-3',
+        time: new Date(now.getTime() - 98 * 60 * 000).toLocaleTimeString(),
+        date: new Date(now.getTime() - 98 * 60 * 000).toLocaleDateString(),
+        username: 'Vijay',
+        deviceName: 'WORKSTATION-VIJAY',
+        event: 'Sensitive Folder Access: D:\\HR_SalaryReview',
+        risk: 60,
+        actionTaken: 'Process Terminated'
+      }
+    ];
+  }
+
+  renderAll();
+
+  // Fluctuate CPU/Memory every 4 seconds
+  if (!window.demoWorkerInterval) {
+    window.demoWorkerInterval = setInterval(() => {
+      if (!useDemoMode) return;
+      
+      Object.keys(employees).forEach(empId => {
+        const emp = employees[empId];
+        if (emp.isIsolated || emp.underActiveThreatSimulation) return;
+        
+        // Minor telemetry shifts
+        emp.cpuUsage = Math.max(5, Math.min(65, Math.floor(emp.cpuUsage + (Math.random() * 10 - 5))));
+        emp.memoryUsage = Math.max(20, Math.min(80, Math.floor(emp.memoryUsage + (Math.random() * 6 - 3))));
+        
+        calculateRiskLocal(emp);
+      });
+      
+      updateOverviewMetrics();
+      renderLeaderboard();
+      renderEmployeeGrid();
+      updateCharts();
+      if (selectedEmployeeId) {
+        renderEmployeeDetail(selectedEmployeeId);
+      }
+    }, 4000);
+  }
+};
+
+const calculateRiskLocal = (employee) => {
+  let score = 10;
+  let alerts = [];
+  
+  const outOfHours = employee.activityTimeline.some(e => e.event.includes("Outside Office Hours"));
+  if (outOfHours) { score += 20; alerts.push('Login Outside Office Hours'); }
+  
+  if (employee.usbStatus !== 'No USB Connected' && !employee.usbStatus.includes("Blocked")) {
+    score += 20;
+    alerts.push('Unknown USB Device Connected');
+  }
+  
+  if (employee.cpuUsage > 80) { score += 15; alerts.push('Abnormal High CPU Usage'); }
+  
+  const suspiciousProcess = employee.runningProcesses.some(proc => 
+    !['chrome.exe', 'code.exe', 'explorer.exe', 'excel.exe', 'winword.exe', 'outlook.exe', 'teams.exe', 'slack.exe', 'spotify.exe', 'node.exe', 'python.exe', 'cmd.exe', 'powershell.exe', 'taskmgr.exe', 'system idle process'].includes(proc.toLowerCase()) ||
+    ['malware.exe', 'ransomware.exe', 'mimikatz.exe'].includes(proc.toLowerCase())
+  );
+  if (suspiciousProcess) { score += 30; alerts.push('Suspicious Executable Started'); }
+  
+  const folderAccess = employee.activityTimeline.some(e => e.event.includes("Sensitive Folder Access"));
+  if (folderAccess) { score += 25; alerts.push('Multiple Sensitive Folder Access'); }
+  
+  score = Math.min(100, Math.max(0, score));
+  
+  let level = 'LOW';
+  if (score >= settings.alertThreshold) {
+    level = 'HIGH';
+    employee.status = 'Compromised';
+  } else if (score >= 40) {
+    level = 'MEDIUM';
+    employee.status = 'Vulnerable';
+  } else {
+    level = 'LOW';
+    employee.status = 'Protected';
+  }
+  
+  if (employee.isIsolated) {
+    employee.status = 'Isolated';
+  }
+  
+  employee.riskScore = score;
+  employee.threatLevel = level;
+  employee.alerts = alerts;
+};
+
+const logEventLocal = (username, deviceName, event, risk, action) => {
+  const now = new Date();
+  const log = {
+    id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+    time: now.toLocaleTimeString(),
+    date: now.toLocaleDateString(),
+    username,
+    deviceName,
+    event,
+    risk,
+    actionTaken: action
+  };
+  
+  logs.unshift(log);
+  renderLogsTable();
+  renderRecentThreatFeed();
+  renderReportsPreview();
+};
+
+const runSimulationStepLocal = (empId) => {
+  if (!activeSimulations[empId]) {
+    activeSimulations[empId] = 0;
+  }
+  
+  const step = activeSimulations[empId];
+  const emp = employees[empId];
+  if (!emp || !emp.underActiveThreatSimulation) {
+    delete activeSimulations[empId];
+    return;
+  }
+  
+  const timeStr = new Date().toLocaleTimeString();
+  
+  if (step === 0) {
+    emp.activityTimeline.push({ time: timeStr, event: 'Login Outside Office Hours (Alert Triggered)', risk: 20, type: 'warning' });
+    calculateRiskLocal(emp);
+    logEventLocal(emp.name, emp.deviceName, 'Login Outside Office Hours', emp.riskScore, 'Monitored');
+  } else if (step === 1) {
+    emp.usbStatus = 'Kingston USB 3.0 (Unverified)';
+    emp.activityTimeline.push({ time: timeStr, event: 'Unknown USB Device Connected', risk: 20, type: 'warning' });
+    calculateRiskLocal(emp);
+    logEventLocal(emp.name, emp.deviceName, 'USB Device Inserted: Kingston USB 3.0', emp.riskScore, 'Alert Generated');
+  } else if (step === 2) {
+    emp.runningProcesses.push('malware.exe');
+    emp.activityTimeline.push({ time: timeStr, event: 'Unknown Process Started: malware.exe', risk: 30, type: 'threat' });
+    calculateRiskLocal(emp);
+    logEventLocal(emp.name, emp.deviceName, 'Process Started: malware.exe (Suspicious)', emp.riskScore, 'Alert Generated');
+  } else if (step === 3) {
+    emp.cpuUsage = 88;
+    emp.activityTimeline.push({ time: timeStr, event: 'Abnormal CPU Usage detected (88%)', risk: 15, type: 'warning' });
+    calculateRiskLocal(emp);
+    logEventLocal(emp.name, emp.deviceName, 'High CPU Usage Detected (88%)', emp.riskScore, 'Monitored');
+  } else if (step === 4) {
+    emp.activityTimeline.push({ time: timeStr, event: 'Multiple Sensitive Folder Access (D:\\Finance\\Salaries)', risk: 25, type: 'threat' });
+    calculateRiskLocal(emp);
+    logEventLocal(emp.name, emp.deviceName, 'Unauthorized Folder Access Attempt: D:\\Finance\\Salaries', emp.riskScore, 'Security Rule Triggered');
+    emp.underActiveThreatSimulation = false;
+    delete activeSimulations[empId];
+  }
+  
+  updateOverviewMetrics();
+  renderLeaderboard();
+  renderEmployeeGrid();
+  updateCharts();
+  if (selectedEmployeeId === empId) {
+    renderEmployeeDetail(empId);
+  }
+  checkGlobalAlerts();
+  
+  if (emp.underActiveThreatSimulation) {
+    activeSimulations[empId]++;
+    setTimeout(() => runSimulationStepLocal(empId), 3500);
+  }
+};
+
+// ==========================================
+// 2. ROUTING AND AUTHENTICATION
 // ==========================================
 
 const checkAuth = () => {
@@ -24,7 +259,9 @@ const checkAuth = () => {
       window.location.hash = '#/overview';
     }
     showAppView();
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
+    if (useDemoMode) {
+      initializeDemoState();
+    } else if (!socket || socket.readyState !== WebSocket.OPEN) {
       initWebSocket();
     }
   }
@@ -50,7 +287,6 @@ const handleRouting = () => {
   
   showAppView();
   
-  // Map hashes to section IDs
   const routeMap = {
     '#/overview': 'page-overview',
     '#/endpoints': 'page-employees',
@@ -61,7 +297,6 @@ const handleRouting = () => {
   
   const targetPageId = routeMap[hash] || 'page-overview';
   
-  // Update sidebar active state
   document.querySelectorAll('.sidebar .nav-item').forEach(item => {
     const target = item.getAttribute('data-target');
     if (targetPageId === target) {
@@ -71,7 +306,6 @@ const handleRouting = () => {
     }
   });
   
-  // Switch visible sections
   document.querySelectorAll('.page-section').forEach(page => {
     if (page.id === targetPageId) {
       page.classList.add('active');
@@ -80,9 +314,8 @@ const handleRouting = () => {
     }
   });
   
-  // Trigger layout recalculations if page changes
   if (hash === '#/overview' && employees && Object.keys(employees).length > 0) {
-    setTimeout(initCharts, 50); // Give DOM time to update
+    setTimeout(initCharts, 50);
   }
   
   if (hash === '#/agent-onboarding') {
@@ -98,6 +331,19 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   const errorMsg = document.getElementById('login-error-msg');
   
   errorMsg.classList.add('hide');
+  
+  if (useDemoMode) {
+    if (usernameInput === 'admin' && passwordInput === 'secureguard') {
+      sessionStorage.setItem('isLoggedIn', 'true');
+      sessionStorage.setItem('username', usernameInput);
+      window.location.hash = '#/overview';
+      checkAuth();
+    } else {
+      errorMsg.textContent = '⚠️ Invalid credentials. Use admin / secureguard';
+      errorMsg.classList.remove('hide');
+    }
+    return;
+  }
   
   try {
     const res = await fetch('/api/login', {
@@ -117,15 +363,15 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
       errorMsg.classList.remove('hide');
     }
   } catch (err) {
-    console.error(err);
-    // Frontend-only fallback if server API is not running/yet updated
+    console.error("[EDR] Login API failed. Falling back to Demo Mode credentials.");
     if (usernameInput === 'admin' && passwordInput === 'secureguard') {
+      useDemoMode = true;
       sessionStorage.setItem('isLoggedIn', 'true');
       sessionStorage.setItem('username', usernameInput);
       window.location.hash = '#/overview';
       checkAuth();
     } else {
-      errorMsg.textContent = '⚠️ Connection error. Default fallback failed.';
+      errorMsg.textContent = '⚠️ Invalid credentials (admin / secureguard).';
       errorMsg.classList.remove('hide');
     }
   }
@@ -176,7 +422,7 @@ document.querySelectorAll('.btn-copy-code').forEach(btn => {
 window.addEventListener('hashchange', handleRouting);
 
 // ==========================================
-// 2. WEBSOCKET LOGIC & FEEDS
+// 3. WEBSOCKET LOGIC & FEEDS
 // ==========================================
 
 const getWebSocketUrl = () => {
@@ -187,6 +433,7 @@ const getWebSocketUrl = () => {
 };
 
 const initWebSocket = () => {
+  if (useDemoMode) return;
   if (sessionStorage.getItem('isLoggedIn') !== 'true') return;
   
   const url = getWebSocketUrl();
@@ -207,11 +454,18 @@ const initWebSocket = () => {
     }
   };
   
+  socket.onerror = () => {
+    console.error("[EDR-WS] Telemetry websocket failed to connect. Loading offline simulator.");
+    useDemoMode = true;
+    initializeDemoState();
+  };
+  
   socket.onclose = () => {
     document.querySelector('.status-dot').className = 'status-dot red';
     document.querySelector('.status-value').className = 'status-value red';
     document.querySelector('.status-value').textContent = 'OFFLINE';
-    if (sessionStorage.getItem('isLoggedIn') === 'true') {
+    
+    if (sessionStorage.getItem('isLoggedIn') === 'true' && !useDemoMode) {
       setTimeout(initWebSocket, 3000);
     }
   };
@@ -256,6 +510,36 @@ const handleSocketMessage = (data) => {
 };
 
 const sendMitigation = async (username, action, payload = '') => {
+  const empId = username.toLowerCase();
+  const emp = employees[empId];
+  
+  if (useDemoMode && emp) {
+    const timeStr = new Date().toLocaleTimeString();
+    if (action === 'KILL_PROCESS') {
+      emp.runningProcesses = emp.runningProcesses.filter(p => p !== payload);
+      if (payload === 'malware.exe') emp.cpuUsage = 15;
+      emp.activityTimeline.push({ time: timeStr, event: `Process Blocked & Killed: ${payload}`, risk: 0, type: 'mitigation' });
+      calculateRiskLocal(emp);
+      logEventLocal(emp.name, emp.deviceName, `Process Terminated: ${payload}`, emp.riskScore, 'Admin Action: Killed Process');
+    } else if (action === 'BLOCK_USB') {
+      emp.usbStatus = 'No USB Connected (Blocked)';
+      emp.activityTimeline.push({ time: timeStr, event: 'USB Device Blocked & Ejected', risk: 0, type: 'mitigation' });
+      calculateRiskLocal(emp);
+      logEventLocal(emp.name, emp.deviceName, 'USB Drive Blocked & Ejected', emp.riskScore, 'Admin Action: Blocked USB');
+    } else if (action === 'ISOLATE_SYSTEM') {
+      emp.isIsolated = true;
+      emp.activityTimeline.push({ time: timeStr, event: 'Network Isolation Triggered', risk: 0, type: 'mitigation' });
+      calculateRiskLocal(emp);
+      logEventLocal(emp.name, emp.deviceName, 'System Network Isolated', emp.riskScore, 'Admin Action: Isolated System');
+    }
+    
+    renderAll();
+    if (selectedEmployeeId === empId) {
+      renderEmployeeDetail(empId);
+    }
+    return;
+  }
+
   try {
     await fetch('/api/mitigate', {
       method: 'POST',
@@ -268,6 +552,29 @@ const sendMitigation = async (username, action, payload = '') => {
 };
 
 const sendReset = async (username) => {
+  const empId = username.toLowerCase();
+  const emp = employees[empId];
+  
+  if (useDemoMode && emp) {
+    emp.underActiveThreatSimulation = false;
+    emp.isIsolated = false;
+    emp.cpuUsage = 12;
+    emp.memoryUsage = 35;
+    emp.usbStatus = 'No USB Connected';
+    emp.runningProcesses = ['chrome.exe', 'code.exe', 'explorer.exe'];
+    emp.activityTimeline = [
+      { time: '09:00 AM', event: 'System Boot & Login', risk: 0, type: 'info' },
+      { time: '09:10 AM', event: 'Chrome Opened', risk: 0, type: 'info' },
+      { time: '09:15 AM', event: 'VS Code Opened', risk: 0, type: 'info' }
+    ];
+    calculateRiskLocal(emp);
+    renderAll();
+    if (selectedEmployeeId === empId) {
+      renderEmployeeDetail(empId);
+    }
+    return;
+  }
+
   try {
     await fetch('/api/reset-employee', {
       method: 'POST',
@@ -280,6 +587,31 @@ const sendReset = async (username) => {
 };
 
 const triggerSimulation = async (username) => {
+  const empId = username.toLowerCase();
+  const emp = employees[empId];
+  
+  if (useDemoMode && emp) {
+    if (emp.underActiveThreatSimulation) return;
+    emp.underActiveThreatSimulation = true;
+    emp.isIsolated = false;
+    emp.cpuUsage = 15;
+    emp.usbStatus = 'No USB Connected';
+    emp.runningProcesses = ['chrome.exe', 'code.exe', 'explorer.exe'];
+    emp.activityTimeline = [
+      { time: new Date().toLocaleTimeString(), event: 'System Boot & Login', risk: 0, type: 'info' }
+    ];
+    calculateRiskLocal(emp);
+    
+    renderAll();
+    if (selectedEmployeeId === empId) {
+      renderEmployeeDetail(empId);
+    }
+    
+    activeSimulations[empId] = 0;
+    setTimeout(() => runSimulationStepLocal(empId), 3000);
+    return;
+  }
+
   try {
     await fetch('/api/simulate-threat', {
       method: 'POST',
@@ -306,6 +638,7 @@ const renderAll = () => {
 const updateOverviewMetrics = () => {
   const empList = Object.values(employees);
   const total = empList.length;
+  if (total === 0) return;
   
   const activeThreats = empList.filter(e => e.riskScore >= settings.alertThreshold).length;
   const isolated = empList.filter(e => e.status === 'Isolated').length;
@@ -783,6 +1116,13 @@ const clearLogsBtn = document.getElementById('btn-clear-logs');
 if (clearLogsBtn) {
   clearLogsBtn.addEventListener('click', async () => {
     if (confirm('Flush log archives?')) {
+      if (useDemoMode) {
+        logs = [];
+        renderLogsTable();
+        renderRecentThreatFeed();
+        renderReportsPreview();
+        return;
+      }
       await fetch('/api/logs/clear', { method: 'POST' });
     }
   });

@@ -7,7 +7,7 @@ import asyncio
 import websockets
 from flask import Flask, jsonify, request, send_from_directory
 
-app = Flask(__name__, static_folder='public')
+app = Flask(__name__, static_folder='.', static_url_path='')
 DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.json')
 
 PROCESS_WHITELIST = [
@@ -247,11 +247,11 @@ def simulation_worker():
 
 @app.route('/')
 def index():
-    return send_from_directory('public', 'index.html')
+    return send_from_directory('.', 'index.html')
 
 @app.route('/<path:path>')
 def static_proxy(path):
-    return send_from_directory('public', path)
+    return send_from_directory('.', path)
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
