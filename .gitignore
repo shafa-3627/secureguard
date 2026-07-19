@@ -1,0 +1,13 @@
+# Security telemetry data
+database.json
+SensitiveData/
+
+# Python caching
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Operating system files
+.DS_Store
+Thumbs.db

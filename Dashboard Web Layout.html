@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureGuard Enterprise - EDR & User Behaviour Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <header class="top-nav">
+    <div class="logo-area">
+      <svg class="logo-icon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <div class="logo-text">
+        <span class="logo-title">SECURE<span class="highlight">GUARD</span></span>
+        <span class="logo-subtitle">ENTERPRISE EDR</span>
+      </div>
+    </div>
+    
+    <div class="system-status-indicator">
+      <span class="status-dot pulsing green"></span>
+      <span class="status-label">Central Server: <span class="status-value green">ONLINE</span></span>
+    </div>
+
+    <div class="nav-metrics">
+      <div class="nav-metric-item">
+        <span class="metric-label">Threat Level:</span>
+        <span id="global-threat-level" class="metric-value green">LOW</span>
+      </div>
+      <div class="nav-metric-item">
+        <span class="metric-label">Active Agents:</span>
+        <span id="active-agents-count" class="metric-value">0/20</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    
+    <nav class="sidebar">
+      <ul class="nav-menu">
+        <li class="nav-item active" data-target="page-overview">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+          <span>Dashboard</span>
+        </li>
+        <li class="nav-item" data-target="page-employees">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span>Endpoints <span id="alert-badge-count" class="badge red hide">0</span></span>
+        </li>
+        <li class="nav-item" data-target="page-logs">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          <span>Threat Logs</span>
+        </li>
+        <li class="nav-item" data-target="page-reports">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span>Security Reports</span>
+        </li>
+      </ul>
+      
+      <div class="sidebar-footer">
+        <p>Protected by SecureGuard v1.0</p>
+      </div>
+    </nav>
+
+    <main class="workspace">
+
+      <!-- OVERVIEW PAGE -->
+      <section id="page-overview" class="page-section active">
+        <div class="page-header">
+          <div>
+            <h1>Security Operations Overview</h1>
+            <p class="subtitle">Real-time status of corporate network endpoints and UBA threat metrics.</p>
+          </div>
+          
+          <div class="quick-simulation-bar">
+            <span class="bar-label">⚡ Faculty Demo Triggers:</span>
+            <button id="btn-demo-normal" class="btn btn-sm btn-outline">Scenario 1: Normal User</button>
+            <button id="btn-demo-threat" class="btn btn-sm btn-danger">Scenario 2: Threat (Kumar)</button>
+            <button id="btn-demo-threat2" class="btn btn-sm btn-warning">Scenario 2b: Threat (Emp-07)</button>
+          </div>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="card-header">
+              <span class="card-title">Endpoint Safety</span>
+              <div class="card-icon green">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              </div>
+            </div>
+            <div class="card-body">
+              <span id="protected-ratio" class="metric-big">20/20</span>
+              <p class="metric-desc">Systems running normally</p>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="card-header">
+              <span class="card-title">Active Threats</span>
+              <div class="card-icon red">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              </div>
+            </div>
+            <div class="card-body">
+              <span id="active-threats-count" class="metric-big">0</span>
+              <p class="metric-desc">Critical alerts requiring attention</p>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="card-header">
+              <span class="card-title">USB Drives</span>
+              <div class="card-icon blue">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M18.84 9.87l-4.71-4.71a2.83 2.83 0 0 0-4 0l-4.71 4.71a2.83 2.83 0 0 0 0 4l4.71 4.71a2.83 2.83 0 0 0 4 0l4.71-4.71a2.83 2.83 0 0 0 0-4z"></path><line x1="9.42" y1="14.58" x2="14.58" y2="9.42"></line></svg>
+              </div>
+            </div>
+            <div class="card-body">
+              <span id="usb-active-count" class="metric-big">0</span>
+              <p class="metric-desc">Currently connected removable drives</p>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="card-header">
+              <span class="card-title">Isolated Systems</span>
+              <div class="card-icon yellow">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
+              </div>
+            </div>
+            <div class="card-body">
+              <span id="isolated-systems-count" class="metric-big">0</span>
+              <p class="metric-desc">Quarantined endpoints</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="live-alert-container" class="live-alert-banner hide">
+          <div class="alert-pulse-light"></div>
+          <div class="alert-content">
+            <div class="alert-header">
+              <span class="alert-title">⚠️ HIGH RISK ACTIVITY DETECTED</span>
+              <span class="alert-time" id="banner-alert-time">09:42:15</span>
+            </div>
+            <div class="alert-body">
+              <p>Employee: <strong id="banner-employee-name">Kumar</strong> (<span id="banner-employee-dept">Finance</span>)</p>
+              <p>Critical Indicators:</p>
+              <ul id="banner-alert-reasons" class="bullet-list">
+                <li>Unknown Executable Started</li>
+                <li>USB Drive Inserted</li>
+                <li>Sensitive Folder Accessed</li>
+              </ul>
+              <div class="alert-actions">
+                <button id="banner-btn-isolate" class="btn btn-sm btn-danger">Isolate System</button>
+                <button id="banner-btn-kill" class="btn btn-sm btn-warning">Kill Suspicious Process</button>
+                <button id="banner-btn-dismiss" class="btn btn-sm btn-outline">Dismiss Alert</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="dashboard-charts-row" style="display: flex; gap: 20px; margin-bottom: 20px;">
+          <div class="panel flex-1" style="flex: 1; min-height: 220px;">
+            <div class="panel-header">
+              <h2 class="panel-title">Threat Levels Distribution</h2>
+              <span class="panel-subtitle">Current status of endpoints</span>
+            </div>
+            <div class="panel-body" style="height: 180px; position: relative;">
+              <canvas id="threat-chart"></canvas>
+            </div>
+          </div>
+          <div class="panel flex-2" style="flex: 2; min-height: 220px;">
+            <div class="panel-header">
+              <h2 class="panel-title">System Risk Analytics</h2>
+              <span class="panel-subtitle">Live endpoint threat score levels</span>
+            </div>
+            <div class="panel-body" style="height: 180px; position: relative;">
+              <canvas id="risk-trend-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-details-row">
+          <div class="panel flex-2">
+            <div class="panel-header">
+              <h2 class="panel-title">Real-Time Threat Feed</h2>
+              <span class="panel-subtitle">Latest endpoint incidents</span>
+            </div>
+            <div class="panel-body">
+              <div class="feed-list" id="realtime-feed-list">
+                <div class="feed-item empty">No security events logged in this session.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel flex-1">
+            <div class="panel-header">
+              <h2 class="panel-title">Highest Risk Users</h2>
+              <span class="panel-subtitle">Immediate attention recommended</span>
+            </div>
+            <div class="panel-body">
+              <div class="risk-leaderboard" id="risk-leaderboard-list">
+                <div class="leaderboard-item-placeholder">All users operating inside normal ranges.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ENDPOINTS MATRIX PAGE -->
+      <section id="page-employees" class="page-section">
+        <div class="page-header">
+          <div>
+            <h1>Endpoint Management Matrix</h1>
+            <p class="subtitle">Select an employee endpoint to inspect processes, USB telemetry, and send mitigation isolation commands.</p>
+          </div>
+        </div>
+
+        <div class="employee-layout-grid">
+          <div class="employee-grid-container">
+            <div class="search-filter-row">
+              <input type="text" id="employee-search" placeholder="Search by name or department..." class="form-control">
+              <select id="employee-status-filter" class="form-control select-control">
+                <option value="all">All Threat Levels</option>
+                <option value="high">High Threat</option>
+                <option value="medium">Medium Threat</option>
+                <option value="low">Low Threat</option>
+              </select>
+            </div>
+            <div class="employees-grid" id="employees-grid-list"></div>
+          </div>
+
+          <!-- Endpoint Details Sidebar -->
+          <div class="panel detail-panel" id="employee-detail-panel">
+            <div class="detail-placeholder-state" id="detail-placeholder">
+              <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1" fill="none" class="pulse-icon"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+              <h3>No Endpoint Selected</h3>
+              <p>Click on any employee card to inspect their system in real-time, view process lists, USB connections, and trigger remote commands.</p>
+            </div>
+
+            <div class="detail-active-state hide" id="detail-content">
+              <div class="detail-header-block">
+                <div class="user-profile-title">
+                  <h2 id="detail-emp-name">Kumar</h2>
+                  <span id="detail-emp-dept" class="dept-tag">IT Department</span>
+                </div>
+                <div class="threat-status-badge" id="detail-threat-badge">HIGH RISK</div>
+              </div>
+
+              <div class="mitigation-action-box">
+                <h4 class="action-box-title">🛡️ Remote Endpoint Control</h4>
+                <div class="action-buttons-group">
+                  <button id="control-btn-isolate" class="btn btn-danger">Isolate Network</button>
+                  <button id="control-btn-blockusb" class="btn btn-warning">Block & Eject USB</button>
+                  <button id="control-btn-reset" class="btn btn-outline">Reset Endpoint</button>
+                </div>
+              </div>
+
+              <div class="telemetry-bar-row">
+                <div class="telemetry-item">
+                  <span class="telemetry-label">CPU Usage</span>
+                  <div class="progress-container">
+                    <div id="detail-cpu-bar" class="progress-bar" style="width: 12%;"></div>
+                  </div>
+                  <span id="detail-cpu-text" class="telemetry-val">12%</span>
+                </div>
+
+                <div class="telemetry-item">
+                  <span class="telemetry-label">Memory Usage</span>
+                  <div class="progress-container">
+                    <div id="detail-mem-bar" class="progress-bar" style="width: 35%;"></div>
+                  </div>
+                  <span id="detail-mem-text" class="telemetry-val">35%</span>
+                </div>
+              </div>
+
+              <div class="detail-grid-row">
+                <div class="detail-sub-section">
+                  <h4 class="sub-sec-title">Active Processes</h4>
+                  <ul class="process-list-view" id="detail-process-list"></ul>
+                </div>
+
+                <div class="detail-sub-section">
+                  <h4 class="sub-sec-title">Device & Telemetry</h4>
+                  <table class="telemetry-table">
+                    <tr>
+                      <td>Device Name:</td>
+                      <td id="detail-device-name" class="mono">WORKSTATION-KUMAR</td>
+                    </tr>
+                    <tr>
+                      <td>Agent Status:</td>
+                      <td id="detail-agent-status">Simulated Connection</td>
+                    </tr>
+                    <tr>
+                      <td>USB Status:</td>
+                      <td id="detail-usb-status" class="warning">No USB Connected</td>
+                    </tr>
+                    <tr>
+                      <td>Risk Score:</td>
+                      <td id="detail-risk-score" class="mono bold text-red">12/100</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+
+              <div class="detail-sub-section" style="margin-top: 15px;">
+                <h4 class="sub-sec-title">Activity Timeline</h4>
+                <div class="timeline" id="detail-timeline"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- THREAT LOGS PAGE -->
+      <section id="page-logs" class="page-section">
+        <div class="page-header">
+          <div>
+            <h1>Comprehensive Threat Logs</h1>
+            <p class="subtitle">Historical record of all endpoint event alerts, UBA anomalies, and mitigation events.</p>
+          </div>
+          <button id="btn-clear-logs" class="btn btn-outline btn-danger">Clear All Logs</button>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header logs-filter-bar">
+            <input type="text" id="log-search" placeholder="Search logs by name, event, action..." class="form-control log-search-input">
+            <select id="log-risk-filter" class="form-control select-control">
+              <option value="all">All Risks</option>
+              <option value="critical">High Risk (70+)</option>
+              <option value="warning">Medium Risk (30-69)</option>
+              <option value="info">Low Risk (0-29)</option>
+            </select>
+          </div>
+          <div class="panel-body table-responsive">
+            <table class="logs-table" id="logs-data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Username</th>
+                  <th>Device Name</th>
+                  <th>Event Log</th>
+                  <th>Risk Score</th>
+                  <th>Action Taken</th>
+                </tr>
+              </thead>
+              <tbody id="logs-table-body"></tbody>
+            </table>
+            <div id="logs-empty-state" class="empty-state hide">
+              <p>No threat logs match your filter criteria.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECURITY REPORTS PAGE -->
+      <section id="page-reports" class="page-section">
+        <div class="page-header">
+          <div>
+            <h1>Security Reports Center</h1>
+            <p class="subtitle">Configure detection parameters and export corporate threat reports for executive review.</p>
+          </div>
+        </div>
+
+        <div class="reports-layout-grid">
+          <div class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">EDR Configuration Settings</h2>
+            </div>
+            <div class="panel-body">
+              <form id="settings-form" class="settings-form">
+                <div class="form-group">
+                  <label for="input-threshold" class="form-label">Critical Alert Risk Threshold</label>
+                  <input type="number" id="input-threshold" value="70" min="10" max="95" class="form-control">
+                  <span class="form-help">Risk scores at or above this threshold generate administrative alerts immediately.</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Protected Folders (Honeypots)</label>
+                  <ul class="protected-folders-list">
+                    <li><code>C:\SensitiveData</code></li>
+                    <li><code>D:\FinanceDocuments</code></li>
+                    <li><code>C:\Users\Administrator</code></li>
+                  </ul>
+                  <span class="form-help">Modifications/Reads in these directories trigger UBA alerts.</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Default Process Whitelist</label>
+                  <div class="whitelist-tags-container">
+                    <span class="whitelist-tag">chrome.exe</span>
+                    <span class="whitelist-tag">code.exe</span>
+                    <span class="whitelist-tag">explorer.exe</span>
+                    <span class="whitelist-tag">winword.exe</span>
+                    <span class="whitelist-tag">excel.exe</span>
+                    <span class="whitelist-tag">slack.exe</span>
+                    <span class="whitelist-tag">teams.exe</span>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Export Executive Summary</h2>
+            </div>
+            <div class="panel-body report-preview-body">
+              <div class="report-mockup">
+                <div class="mockup-header">
+                  <h3>Daily Security Report</h3>
+                  <span id="report-date-str">July 4, 2026</span>
+                </div>
+                <div class="mockup-stats">
+                  <div class="m-stat">
+                    <span class="m-stat-label">Total Users</span>
+                    <span class="m-stat-val">20</span>
+                  </div>
+                  <div class="m-stat">
+                    <span class="m-stat-label">Blocked USB</span>
+                    <span class="m-stat-val" id="report-blocked-usb">0</span>
+                  </div>
+                  <div class="m-stat">
+                    <span class="m-stat-label">Active Threats</span>
+                    <span class="m-stat-val red" id="report-threats-count">0</span>
+                  </div>
+                  <div class="m-stat">
+                    <span class="m-stat-label">Highest Risk User</span>
+                    <span class="m-stat-val bold" id="report-highest-risk-user">None</span>
+                  </div>
+                </div>
+                <div class="mockup-footer">
+                  <span>Overall Network Status:</span>
+                  <span class="status-pill green" id="report-status-badge">SECURE</span>
+                </div>
+              </div>
+
+              <div class="export-actions-row">
+                <button id="btn-export-pdf" class="btn btn-primary flex-1">Export PDF Report</button>
+                <button id="btn-export-excel" class="btn btn-outline flex-1">Export Excel (XLSX)</button>
+                <button id="btn-export-csv" class="btn btn-outline flex-1">Export CSV Data</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="js/reports.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
